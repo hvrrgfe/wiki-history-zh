@@ -1,7 +1,7 @@
 /* ── 维基历史条目库 · Kiwix 风格 ── */
 let allEntries = [];
 let currentFocus = -1;
-let currentSearch = '';
+let currentResults = [];
 
 const $ = (id) => document.getElementById(id);
 const homeSearch = $('home-search');
@@ -13,37 +13,32 @@ const articleView = $('article-view');
 const articleContent = $('article-content');
 
 /* ── 加载索引 ── */
-fetch('data.json').then(r => r.json()).then(data => {
-  allEntries = data;
-});
+fetch('data.json').then(r => r.json()).then(data => { allEntries = data; });
 
-/* ── 搜索逻辑 ── */
-function search(q) {
+/* ── 搜索 ── */
+function doSearch(q) {
   q = q.trim().toLowerCase();
   if (!q) return [];
-  // 优先前缀匹配，其次包含匹配
   const prefix = [], contains = [];
   for (const e of allEntries) {
     const t = e.t.toLowerCase();
     if (t.startsWith(q)) prefix.push(e);
     else if (t.includes(q)) contains.push(e);
   }
-  return [...prefix, ...contains].slice(0, 50);
+  return [...prefix, ...contains].slice(0, 30);
 }
 
-function renderResults(results, container, inputEl) {
+function renderResults(results, container) {
+  currentResults = results;
   if (results.length === 0) {
     container.innerHTML = '<div class="sr-empty">未找到相关条目</div>';
   } else {
     container.innerHTML = results.map((e, i) => {
-      const badge = e.r ? '<span class="sr-redirect">↳ 重定向</span>' : '<span class="sr-badge">正文</span>';
+      const badge = e.r ? '<span class="sr-redirect">↳</span>' : '';
       return `<div class="sr-item" data-idx="${i}">${e.t} ${badge}</div>`;
     }).join('');
-    container.querySelectorAll('.sr-item').forEach((el) => {
-      el.onclick = () => {
-        const idx = parseInt(el.dataset.idx);
-        openArticle(results[idx]);
-      };
+    container.querySelectorAll('.sr-item').forEach(el => {
+      el.onclick = () => openArticle(results[parseInt(el.dataset.idx)]);
     });
   }
   container.classList.add('show');
@@ -52,79 +47,99 @@ function renderResults(results, container, inputEl) {
 
 /* ── 搜索事件 ── */
 let searchTimer = null;
-homeSearch.addEventListener('input', () => {
+function onSearch(inputEl, resultsEl) {
   clearTimeout(searchTimer);
-  const q = homeSearch.value;
-  if (!q.trim()) {
-    searchResults.classList.remove('show');
-    return;
-  }
-  searchTimer = setTimeout(() => {
-    currentSearch = q;
-    renderResults(search(q), searchResults, homeSearch);
-  }, 150);
-});
-
-articleSearch.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  const q = articleSearch.value;
-  if (!q.trim()) {
-    articleSearchResults.classList.remove('show');
-    return;
-  }
-  searchTimer = setTimeout(() => {
-    currentSearch = q;
-    renderResults(search(q), articleSearchResults, articleSearch);
-  }, 150);
-});
+  const q = inputEl.value;
+  if (!q.trim()) { resultsEl.classList.remove('show'); return; }
+  searchTimer = setTimeout(() => renderResults(doSearch(q), resultsEl), 120);
+}
+homeSearch.addEventListener('input', () => onSearch(homeSearch, searchResults));
+articleSearch.addEventListener('input', () => onSearch(articleSearch, articleSearchResults));
 
 /* ── 键盘导航 ── */
-function handleKeyboard(e, results, container, inputEl) {
+function handleKB(e, container, inputEl) {
   const items = container.querySelectorAll('.sr-item');
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     currentFocus = Math.min(currentFocus + 1, items.length - 1);
-    items.forEach((el, i) => el.classList.toggle('active', i === currentFocus));
-    if (items[currentFocus]) items[currentFocus].scrollIntoView({ block: 'nearest' });
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
     currentFocus = Math.max(currentFocus - 1, 0);
-    items.forEach((el, i) => el.classList.toggle('active', i === currentFocus));
-    if (items[currentFocus]) items[currentFocus].scrollIntoView({ block: 'nearest' });
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (currentFocus >= 0 && results[currentFocus]) {
-      openArticle(results[currentFocus]);
-    } else if (results.length > 0) {
-      openArticle(results[0]);
-    }
+    const idx = currentFocus >= 0 ? currentFocus : 0;
+    if (currentResults[idx]) openArticle(currentResults[idx]);
+    return;
   } else if (e.key === 'Escape') {
-    container.classList.remove('show');
-    inputEl.blur();
-  }
+    container.classList.remove('show'); inputEl.blur(); return;
+  } else return;
+  items.forEach((el, i) => el.classList.toggle('active', i === currentFocus));
+  if (items[currentFocus]) items[currentFocus].scrollIntoView({ block: 'nearest' });
 }
+homeSearch.addEventListener('keydown', e => handleKB(e, searchResults, homeSearch));
+articleSearch.addEventListener('keydown', e => handleKB(e, articleSearchResults, articleSearch));
 
-homeSearch.addEventListener('keydown', (e) => {
-  const results = search(currentSearch);
-  handleKeyboard(e, results, searchResults, homeSearch);
-});
-
-articleSearch.addEventListener('keydown', (e) => {
-  const results = search(currentSearch);
-  handleKeyboard(e, results, articleSearchResults, articleSearch);
-});
-
-/* ── 点击外部关闭搜索结果 ── */
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   if (!e.target.closest('.search-box') && !e.target.closest('.article-header')) {
     searchResults.classList.remove('show');
     articleSearchResults.classList.remove('show');
   }
 });
 
+/* ── 管道文本 → HTML 表格 ── */
+function convertPipes(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let table = [];
+  let tableCells = 0;
+
+  function flushTable() {
+    if (table.length === 0) return;
+    // 分析表格结构
+    const rows = table.map(line => {
+      // 去掉行首 | 和空白
+      line = line.replace(/^\s*\|?\s*/, '').replace(/\s*\|?\s*$/, '');
+      return line.split(/\s*\|\s*/).filter(c => c !== '');
+    });
+    // 判断是否为键值对（2列且第一列短）
+    const maxCols = Math.max(...rows.map(r => r.length));
+    let html = '<table class="wiki-table">';
+    if (maxCols <= 2 && rows.every(r => r.length <= 2)) {
+      // 键值对格式
+      for (const row of rows) {
+        if (row.length === 1) {
+          html += `<tr><td colspan="2" class="wiki-table-title">${row[0]}</td></tr>`;
+        } else {
+          html += `<tr><th>${row[0]}</th><td>${row[1]}</td></tr>`;
+        }
+      }
+    } else {
+      // 多列格式
+      for (const row of rows) {
+        html += '<tr>' + row.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      }
+    }
+    html += '</table>';
+    out.push(html);
+    table = [];
+  }
+
+  for (const line of lines) {
+    // 检测管道分隔行（行首或行中含 |，且不是markdown链接）
+    const isPipeLine = /^\s*\|/.test(line) || (line.includes(' | ') && !line.includes('](') && !line.includes('://'));
+    if (isPipeLine) {
+      table.push(line);
+    } else {
+      flushTable();
+      out.push(line);
+    }
+  }
+  flushTable();
+  return out.join('\n');
+}
+
 /* ── 打开文章 ── */
 async function openArticle(entry) {
-  // 切换视图
   homeView.style.display = 'none';
   articleView.style.display = 'block';
   searchResults.classList.remove('show');
@@ -132,7 +147,6 @@ async function openArticle(entry) {
   homeSearch.value = '';
   articleSearch.value = '';
 
-  // 加载状态
   articleContent.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
   document.querySelector('.article-wrap').scrollTop = 0;
 
@@ -142,7 +156,7 @@ async function openArticle(entry) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const text = await resp.text();
 
-    // 按 --- 分隔提取单篇文章
+    // 按 --- 分隔提取单篇
     const sections = text.split(/\n---\n/);
     let found = null, foundRedirect = null;
     for (const s of sections) {
@@ -151,18 +165,22 @@ async function openArticle(entry) {
         if (s.includes('重定向至')) {
           if (!foundRedirect) foundRedirect = s;
         } else {
-          found = s;
-          break;
+          found = s; break;
         }
       }
     }
-    const article = found || foundRedirect || sections.find(s => s.includes(`# ${entry.t}`)) || '';
+    const article = found || foundRedirect || '';
 
     if (article) {
-      let html = marked.parse(article);
-      // 如果是重定向，添加提示样式
+      // 预处理：管道文本→表格，然后交给 marked 渲染
+      const processed = convertPipes(article);
+      let html = marked.parse(processed);
+
+      // 清理空段落
+      html = html.replace(/<p>\s*<\/p>/g, '');
+      // 重定向提示
       if (article.includes('重定向至')) {
-        html = html.replace(/<blockquote>.*?重定向至.*?<\/blockquote>/s,
+        html = html.replace(/<blockquote>[\s\S]*?重定向至[\s\S]*?<\/blockquote>/g,
           '<div class="redirect-notice">📌 本条目为重定向条目</div>');
       }
       articleContent.innerHTML = html;
@@ -170,38 +188,22 @@ async function openArticle(entry) {
       articleContent.innerHTML = '<p style="color:#a0aec0;text-align:center;padding:40px">未找到该条目内容</p>';
     }
   } catch (err) {
-    articleContent.innerHTML = `<p style="color:#e53e3e;text-align:center;padding:40px">加载失败: ${err.message}</p>`;
+    articleContent.innerHTML = `<p style="color:#e53e3e;padding:40px">加载失败: ${err.message}</p>`;
   }
 }
 
-/* ── 返回首页 ── */
 function goHome() {
   articleView.style.display = 'none';
   homeView.style.display = 'flex';
   homeSearch.focus();
 }
 
-/* ── 随机条目 ── */
 function randomArticle() {
-  if (allEntries.length === 0) return;
-  // 优先随机正文条目
-  const articles = allEntries.filter(e => !e.r);
-  const pool = articles.length > 0 ? articles : allEntries;
-  const entry = pool[Math.floor(Math.random() * pool.length)];
-  openArticle(entry);
+  if (!allEntries.length) return;
+  const arts = allEntries.filter(e => !e.r);
+  const pool = arts.length ? arts : allEntries;
+  openArticle(pool[Math.floor(Math.random() * pool.length)]);
 }
 
-/* ── marked.js 配置 ── */
-if (window.marked) {
-  marked.setOptions({ breaks: true, gfm: true });
-}
-
-/* ── 浏览器前进/后退 ── */
-window.addEventListener('popstate', (e) => {
-  if (e.state && e.state.home) {
-    goHome();
-  }
-});
-
-/* ── 自动聚焦 ── */
+if (window.marked) marked.setOptions({ breaks: true, gfm: true });
 homeSearch.focus();
