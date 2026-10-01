@@ -109,41 +109,31 @@ async function loadArticle(idx) {
     const resp = await fetch(`articles/${fileName}`);
     const text = await resp.text();
 
-    // 在文件中查找对应条目
-    const delim = '===ARTICLE_DELIM===';
-    const articles = text.split(delim);
+    // 按分隔线 --- 拆分文章
+    const sections = text.split(/\n---\n/);
     
-    // 查找匹配的文章
+    // 查找匹配的文章（优先找非重定向的）
     let foundArticle = null;
-    for (let a of articles) {
-      a = a.trim();
-      if (!a) continue;
-      const titleMatch = a.match(/^#\s+(.+)$/m);
+    let foundRedirect = null;
+    for (let s of sections) {
+      s = s.trim();
+      if (!s) continue;
+      const titleMatch = s.match(/^#\s+(.+)$/m);
       if (titleMatch && titleMatch[1].trim() === entry.t) {
-        foundArticle = a;
-        break;
-      }
-    }
-
-    // 如果没找到精确匹配，尝试模糊匹配
-    if (!foundArticle) {
-      for (let a of articles) {
-        a = a.trim();
-        if (!a) continue;
-        if (a.includes(entry.t)) {
-          foundArticle = a;
+        if (s.includes('重定向至')) {
+          if (!foundRedirect) foundRedirect = s;
+        } else {
+          foundArticle = s;
           break;
         }
       }
     }
 
-    if (foundArticle) {
-      // 去掉 --- 分隔线
-      foundArticle = foundArticle.replace(/^---$/gm, '').trim();
-      contentEl.innerHTML = marked.parse(foundArticle);
+    const result = foundArticle || foundRedirect || sections.find(s => s.includes(entry.t)) || '';
+    if (result) {
+      contentEl.innerHTML = marked.parse(result);
     } else {
-      // 显示整篇文章
-      contentEl.innerHTML = marked.parse(text.replace(/^---$/gm, ''));
+      contentEl.innerHTML = '<p>未找到该条目内容</p>';
     }
 
     // 滚动到顶部
