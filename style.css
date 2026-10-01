@@ -20,7 +20,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
 #home-view{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#667eea11,#764ba211)}
 .home-center{text-align:center;width:90%;max-width:560px}
 .home-logo{font-size:56px;margin-bottom:8px}
-.home-center h1{font-size:28px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.home-center h1{font-size:28px;font-weight:700;margin-bottom:4px}
 .home-sub{color:var(--text-soft);font-size:14px;margin-bottom:32px}
 
 /* ── 搜索框 ── */
@@ -29,36 +29,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
   width:100%;padding:14px 20px;border:2px solid var(--border);border-radius:var(--radius);
   font-size:16px;outline:none;background:var(--bg);transition:border-color .2s,box-shadow .2s;
 }
-.search-box input:focus,#article-search:focus{
-  border-color:var(--accent);box-shadow:0 0 0 3px rgba(49,130,206,.15)
-}
+.search-box input:focus,#article-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(49,130,206,.15)}
 
 /* ── 搜索结果下拉 ── */
 .search-results{
   position:absolute;top:calc(100% + 4px);left:0;right:0;
   background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
-  box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:400px;overflow-y:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:60vh;overflow-y:auto;
   display:none;z-index:200;
 }
 .search-results.show{display:block}
 .search-results .sr-item{
   padding:10px 20px;cursor:pointer;border-bottom:1px solid var(--border);
-  font-size:15px;transition:background .12s;display:flex;align-items:center;gap:6px;
+  font-size:15px;transition:background .12s;
 }
 .search-results .sr-item:hover{background:var(--bg-hover)}
 .search-results .sr-item.active{background:var(--bg-active)}
-.search-results .sr-item .sr-redirect{color:var(--muted);font-size:12px}
-.search-results .sr-item .sr-badge{
-  font-size:11px;background:var(--bg-soft);border-radius:4px;padding:1px 6px;color:var(--text-soft);
-}
+.search-results .sr-redirect{color:var(--muted);font-size:12px;margin-left:4px}
 .search-results .sr-empty{padding:16px 20px;color:var(--muted);text-align:center;font-size:14px}
 
 /* ── 首页操作 ── */
-.home-actions{margin-top:20px;display:flex;gap:12px;justify-content:center}
+.home-actions{margin-top:20px}
 .home-actions button{
   padding:10px 24px;border:1px solid var(--border);border-radius:var(--radius);
-  background:var(--bg);cursor:pointer;font-size:14px;color:var(--text-soft);
-  transition:all .15s;
+  background:var(--bg);cursor:pointer;font-size:14px;color:var(--text-soft);transition:all .15s;
 }
 .home-actions button:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -76,48 +70,49 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
 #article-search{font-size:14px;padding:8px 14px;border-width:1px}
 .article-wrap{overflow-y:auto;height:calc(100vh - 57px)}
 
-/* ── 文章排版（维基百科/Kiwix 风格） ── */
-#article-content{
-  max-width:var(--max-w);margin:0 auto;padding:32px 24px 80px;
-}
-#article-content h1{
-  font-size:30px;font-weight:700;line-height:1.3;margin-bottom:16px;padding-bottom:10px;
-  border-bottom:1px solid var(--border);
-}
-#article-content h2{
-  font-size:22px;font-weight:600;margin:28px 0 12px;padding-bottom:6px;
-  border-bottom:1px solid var(--border);
-}
+/* ── 文章排版 ── */
+#article-content{max-width:var(--max-w);margin:0 auto;padding:32px 24px 80px}
+#article-content h1{font-size:28px;font-weight:700;line-height:1.3;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+#article-content h2{font-size:21px;font-weight:600;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 #article-content h3{font-size:18px;font-weight:600;margin:22px 0 8px}
 #article-content h4{font-size:16px;font-weight:600;margin:18px 0 6px;color:var(--text-soft)}
 #article-content p{margin:10px 0}
 #article-content ul,#article-content ol{padding-left:24px;margin:10px 0}
 #article-content li{margin:4px 0}
-#article-content a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .15s}
-#article-content a:hover{border-bottom-color:var(--accent)}
+#article-content a{color:var(--accent);text-decoration:none}
+#article-content a:hover{text-decoration:underline}
 #article-content hr{border:none;border-top:1px solid var(--border);margin:24px 0}
-#article-content blockquote{
-  border-left:3px solid var(--accent);padding:10px 16px;background:var(--bg-soft);
-  border-radius:0 var(--radius) var(--radius) 0;margin:12px 0;color:var(--text-soft);
-}
+#article-content blockquote{border-left:3px solid var(--accent);padding:10px 16px;background:var(--bg-soft);border-radius:0 var(--radius) var(--radius) 0;margin:12px 0;color:var(--text-soft)}
 #article-content code{background:var(--bg-soft);padding:2px 6px;border-radius:4px;font-size:13px;font-family:SF Mono,Consolas,monospace}
 #article-content pre{background:#2d3748;color:#e2e8f0;padding:16px;border-radius:var(--radius);overflow-x:auto;margin:12px 0}
 #article-content pre code{background:none;color:inherit;padding:0}
 
-/* 表格/信息框 */
-#article-content table{
-  border-collapse:collapse;margin:12px 0;font-size:14px;width:100%;
+/* ── 维基百科风格表格/信息框 ── */
+#article-content .wiki-table{
+  border-collapse:collapse;width:100%;margin:16px 0;font-size:14px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
 }
-#article-content th,#article-content td{
-  border:1px solid var(--border);padding:6px 10px;text-align:left;vertical-align:top;
+#article-content .wiki-table th{
+  background:var(--bg-soft);font-weight:600;text-align:left;
+  padding:8px 12px;border:1px solid var(--border);white-space:nowrap;
+  color:var(--text-soft);width:30%;vertical-align:top;
 }
-#article-content th{background:var(--bg-soft);font-weight:600}
-
-/* 管道分隔的伪表格（从wiki提取的数据） */
-#article-content p:has-only-pipes{
-  font-size:13px;color:var(--text-soft);background:var(--bg-soft);
-  padding:10px;border-radius:var(--radius);border-left:3px solid var(--accent);
+#article-content .wiki-table td{
+  padding:8px 12px;border:1px solid var(--border);vertical-align:top;
 }
+#article-content .wiki-table-title{
+  background:var(--accent)!important;color:#fff!important;
+  font-weight:700;text-align:center;font-size:16px!important;
+  padding:10px 12px!important;
+}
+#article-content table:not(.wiki-table){
+  border-collapse:collapse;width:100%;margin:12px 0;font-size:14px;
+}
+#article-content table:not(.wiki-table) th,
+#article-content table:not(.wiki-table) td{
+  border:1px solid var(--border);padding:6px 10px;text-align:left;
+}
+#article-content table:not(.wiki-table) th{background:var(--bg-soft);font-weight:600}
 
 /* 重定向提示 */
 .redirect-notice{
@@ -126,15 +121,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
   color:#744210;font-size:14px;
 }
 
-/* 加载状态 */
+/* 加载 */
 .loading{text-align:center;padding:60px 20px;color:var(--muted)}
-.loading .spinner{
-  display:inline-block;width:32px;height:32px;border:3px solid var(--border);
-  border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;
-}
+.loading .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* 移动端 */
 @media(max-width:768px){
   .home-logo{font-size:44px}
   .home-center h1{font-size:22px}
@@ -144,4 +135,5 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC
   .article-header{padding:8px 12px;gap:8px}
   .back-btn{padding:6px 10px;font-size:13px}
   #article-search{padding:6px 10px}
+  #article-content .wiki-table th{width:auto}
 }
